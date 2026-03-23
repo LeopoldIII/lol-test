@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOL · 发现你的专属英雄</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+SC:wght@300;400;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C89B3C;
+    --gold-light: #F0E6D3;
+    --gold-bright: #F4D480;
+    --dark: #010A13;
+    --border: rgba(200,155,60,0.3);
+    --border-bright: rgba(200,155,60,0.7);
+    --text: #A09080;
+    --text-bright: #C8AA6E;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text-bright);
+    font-family: 'Noto Serif SC', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(200,155,60,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(26,58,92,0.15) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(200,155,60,0.015) 80px, rgba(200,155,60,0.015) 81px),
+      repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(200,155,60,0.015) 80px, rgba(200,155,60,0.015) 81px);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.5s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+
+  /* header */
+  .site-header { text-align: center; margin-bottom: 44px; }
+  .logo-line { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 8px; }
+  .logo-divider { flex: 1; max-width: 120px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .logo-icon { font-size: 26px; color: var(--gold); text-shadow: 0 0 20px rgba(200,155,60,0.6); }
+  .site-title { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 6px; color: var(--gold); }
+  .hero-title { font-size: clamp(26px, 5vw, 44px); font-weight: 700; color: var(--gold-light); line-height: 1.2; margin: 14px 0 8px; text-shadow: 0 2px 20px rgba(200,155,60,0.3); }
+  .hero-sub { font-size: 13px; color: var(--text); letter-spacing: 2px; }
+
+  /* panel */
+  .panel {
+    background: linear-gradient(135deg, rgba(13,27,42,0.95), rgba(9,20,40,0.95));
+    border: 1px solid var(--border); border-radius: 4px; padding: 28px 32px;
+    position: relative; margin-bottom: 20px;
+  }
+  .panel::before, .panel::after { content: ''; position: absolute; width: 12px; height: 12px; border-color: var(--gold); border-style: solid; }
+  .panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .panel::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  .section-title { font-size: 12px; color: var(--gold); letter-spacing: 3px; font-family: 'Cinzel', serif; margin-bottom: 14px; text-transform: uppercase; }
+  .deco-stars { text-align: center; font-size: 10px; color: var(--border-bright); letter-spacing: 6px; margin: 14px 0; }
+
+  /* role grid */
+  .role-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 20px 0; }
+  @media(max-width:560px){ .role-grid { grid-template-columns: repeat(3,1fr); } }
+  .role-btn { background: rgba(10,22,40,0.8); border: 1px solid var(--border); border-radius: 4px; padding: 20px 8px 14px; cursor: pointer; text-align: center; transition: all 0.22s; position: relative; overflow: hidden; }
+  .role-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(200,155,60,0.08), transparent); opacity: 0; transition: opacity 0.22s; }
+  .role-btn:hover::before, .role-btn.selected::before { opacity: 1; }
+  .role-btn:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(200,155,60,0.2); }
+  .role-btn.selected { border-color: var(--gold-bright); background: rgba(200,155,60,0.12); box-shadow: 0 0 20px rgba(200,155,60,0.25), inset 0 0 20px rgba(200,155,60,0.05); }
+  .role-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+  .role-name { font-size: 12px; color: var(--text-bright); letter-spacing: 1px; }
+  .role-btn.selected .role-name { color: var(--gold-bright); }
+
+  .intro-list { list-style: none; margin: 16px 0; }
+  .intro-list li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .intro-list li::before { content: '◆'; color: var(--gold); font-size: 8px; flex-shrink: 0; }
+  .intro-list li:last-child { border-bottom: none; }
+
+  /* progress */
+  .progress-wrap { margin-bottom: 24px; }
+  .progress-info { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .progress-label { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); }
+  .progress-num { font-size: 12px; color: var(--text); }
+  .progress-track { height: 3px; background: rgba(200,155,60,0.1); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); border-radius: 2px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 8px rgba(200,155,60,0.5); }
+
+  /* question */
+  .part-tag { display: inline-block; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 3px; color: var(--gold); border: 1px solid var(--border); padding: 3px 10px; margin-bottom: 12px; background: rgba(200,155,60,0.05); }
+  .question-num { font-size: 12px; color: var(--text); margin-bottom: 6px; letter-spacing: 1px; }
+  .question-text { font-size: 16px; line-height: 1.85; color: var(--gold-light); margin-bottom: 22px; }
+
+  /* options */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option-btn {
+    background: rgba(10,22,40,0.6); border: 1px solid var(--border); border-radius: 3px;
+    padding: 14px 18px; cursor: pointer; text-align: left;
+    display: flex; align-items: flex-start; gap: 14px;
+    transition: all 0.18s; color: var(--text-bright); font-size: 14px; line-height: 1.6;
+    font-family: 'Noto Serif SC', serif; width: 100%;
+  }
+  .option-label {
+    flex-shrink: 0; width: 22px; height: 22px; border: 1px solid var(--border-bright); border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); transition: all 0.18s; margin-top: 1px;
+  }
+  .option-btn:hover { border-color: rgba(200,155,60,0.5); background: rgba(200,155,60,0.06); transform: translateX(4px); }
+  .option-btn:hover .option-label { background: rgba(200,155,60,0.15); border-color: var(--gold); }
+  .option-btn.selected { border-color: var(--gold); background: rgba(200,155,60,0.12); }
+  .option-btn.selected .option-label { background: var(--gold); color: var(--dark); border-color: var(--gold-bright); }
+  @keyframes optionFlash { 0% { background: rgba(200,155,60,0.3); } 100% { background: rgba(200,155,60,0.12); } }
+  .option-btn.flash { animation: optionFlash 0.28s ease; }
+
+  /* nav */
+  .nav-row { display: flex; justify-content: flex-start; margin-top: 24px; }
+  .btn { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 3px; padding: 11px 26px; border: 1px solid; cursor: pointer; transition: all 0.22s; text-transform: uppercase; background: transparent; border-radius: 2px; }
+  .btn-primary { color: var(--dark); background: linear-gradient(135deg, var(--gold), #A07830); border-color: var(--gold-bright); box-shadow: 0 0 18px rgba(200,155,60,0.2); }
+  .btn-primary:hover { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); box-shadow: 0 0 28px rgba(200,155,60,0.4); transform: translateY(-1px); }
+  .btn-secondary { color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { border-color: var(--border-bright); color: var(--text-bright); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+
+  /* ===== 结果页 ===== */
+  .result-top { text-align: center; padding: 10px 0 24px; }
+  .result-label { font-family: 'Noto Serif SC', serif; font-size: 18px; letter-spacing: 5px; color: var(--text); margin-bottom: 10px; }
+  .result-champ-name { font-size: clamp(38px, 8vw, 66px); font-weight: 700; color: var(--gold-light); line-height: 1; margin-bottom: 10px; letter-spacing: 4px; text-shadow: 0 0 40px rgba(200,155,60,0.5), 0 2px 0 rgba(0,0,0,0.8); }
+  .result-role-tag { display: inline-block; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 4px; color: var(--gold); border: 1px solid var(--border); padding: 3px 14px; margin-bottom: 22px; text-transform: uppercase; background: rgba(200,155,60,0.05); }
+
+  /* 原画框 — 横版宽图 */
+  .champ-splash-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .champ-splash-frame {
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    overflow: hidden;
+    border: 1px solid var(--border-bright);
+    position: relative;
+  }
+
+  /* 四角金线 */
+  .champ-splash-frame::before, .champ-splash-frame::after {
+    content: ''; position: absolute; width: 20px; height: 20px;
+    border-color: var(--gold-bright); border-style: solid; z-index: 3;
+  }
+  .champ-splash-frame::before { top: -1px; left: -1px; border-width: 3px 0 0 3px; }
+  .champ-splash-frame::after  { bottom: -1px; right: -1px; border-width: 0 3px 3px 0; }
+  .corner-tr { position: absolute; top: -1px; right: -1px; width: 20px; height: 20px; border-color: var(--gold-bright); border-style: solid; border-width: 3px 3px 0 0; z-index: 3; }
+  .corner-bl { position: absolute; bottom: -1px; left: -1px; width: 20px; height: 20px; border-color: var(--gold-bright); border-style: solid; border-width: 0 0 3px 3px; z-index: 3; }
+
+  /* 图片本体 */
+  .champ-splash-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    transition: transform 0.6s ease;
+    filter: brightness(0.9) saturate(1.1);
+  }
+
+  /* 底部渐变遮罩，让图片融入背景 */
+  .champ-splash-frame .splash-fade {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(to bottom, transparent, rgba(9,20,40,0.85));
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* 内部光晕 */
+  .champ-splash-frame .splash-glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(200,155,60,0.06), transparent 70%);
+    z-index: 1;
+    animation: glowPulse 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes glowPulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+  /* 分割线 */
+  .result-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; }
+  .result-divider::before, .result-divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--border-bright), transparent); }
+  .result-divider-icon { color: var(--gold); font-size: 13px; }
+
+  /* 台词 */
+  .quote-wrap { text-align: center; padding: 6px 16px 20px; position: relative; }
+  .quote-mark { font-family: Georgia, serif; font-size: 72px; line-height: 0.4; color: rgba(200,155,60,0.12); position: absolute; top: 20px; left: 10px; user-select: none; }
+  .quote-text { font-family: 'Ma Shan Zheng', cursive; font-size: clamp(19px, 4vw, 27px); color: var(--gold-light); line-height: 1.75; letter-spacing: 3px; text-shadow: 0 0 30px rgba(200,155,60,0.35); position: relative; z-index: 1; }
+  .quote-source { margin-top: 14px; font-size: 12px; color: var(--text); letter-spacing: 3px; font-family: 'Cinzel', serif; }
+
+  /* 解析 */
+  .result-desc { font-size: 14px; line-height: 2; color: var(--text); text-align: justify; }
+
+  /* 按钮区 */
+  .result-actions { display: flex; justify-content: center; gap: 16px; margin-top: 32px; flex-wrap: wrap; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(13,27,42,0.95); border: 1px solid var(--gold); color: var(--gold-light); padding: 10px 24px; font-size: 13px; border-radius: 3px; transition: transform 0.3s; z-index: 999; box-shadow: 0 4px 20px rgba(200,155,60,0.2); white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 首页 -->
+  <div class="page active" id="page-intro">
+    <div class="site-header">
+      <div class="logo-line"><div class="logo-divider"></div><div class="logo-icon">⚔</div><div class="logo-divider"></div></div>
+      <div class="site-title">League of Legends</div>
+      <h1 class="hero-title">发现你的专属英雄</h1>
+      <p class="hero-sub">32题 · 五大位置 · 80种命运</p>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">测试说明</div>
+      <ul class="intro-list">
+        <li>共 32 道题，点击选项即可直接进入下一题</li>
+        <li>请根据直觉作答，选最像你的那一个</li>
+        <li>根据你选择的位置，匹配你的专属英雄</li>
+        <li>测试结束后可以换位置重新查看结果</li>
+      </ul>
+    </div>
+
+    <div class="deco-stars">✦ ✦ ✦</div>
+
+    <div class="panel">
+      <div class="section-title">选择你的位置</div>
+      <p style="font-size:13px;color:var(--text);margin-bottom:4px;">决定你的专属英雄</p>
+      <div class="role-grid">
+        <button class="role-btn" data-role="Top" onclick="selectRole(this)"><span class="role-icon">🛡️</span><span class="role-name">上单</span></button>
+        <button class="role-btn" data-role="Jungle" onclick="selectRole(this)"><span class="role-icon">🌲</span><span class="role-name">打野</span></button>
+        <button class="role-btn" data-role="Mid" onclick="selectRole(this)"><span class="role-icon">⚡</span><span class="role-name">中单</span></button>
+        <button class="role-btn" data-role="ADC" onclick="selectRole(this)"><span class="role-icon">🏹</span><span class="role-name">ADC</span></button>
+        <button class="role-btn" data-role="Support" onclick="selectRole(this)"><span class="role-icon">💫</span><span class="role-name">辅助</span></button>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:28px;">
+      <button class="btn btn-primary" onclick="startTest()" id="start-btn" disabled>开始测试</button>
+    </div>
+  </div>
+
+  <!-- 答题页 -->
+  <div class="page" id="page-quiz">
+    <div class="site-header" style="margin-bottom:28px;">
+      <div class="logo-line"><div class="logo-divider"></div><div class="logo-icon">⚔</div><div class="logo-divider"></div></div>
+      <div class="site-title">League of Legends · 发现你的专属英雄</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span class="progress-label" id="part-label">Part 1</span>
+        <span class="progress-num" id="progress-text">1 / 32</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:3.125%"></div></div>
+    </div>
+    <div class="panel" id="question-panel">
+      <div class="part-tag" id="part-tag">Part 1</div>
+      <div class="question-num" id="q-num">第 1 题</div>
+      <div class="question-text" id="q-text"></div>
+      <div class="options" id="q-options"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" id="btn-prev" onclick="prevQ()" disabled>← 上一题</button>
+    </div>
+  </div>
+
+  <!-- 结果页 -->
+  <div class="page" id="page-result">
+    <div class="site-header" style="margin-bottom:28px;">
+      <div class="logo-line"><div class="logo-divider"></div><div class="logo-icon">⚔</div><div class="logo-divider"></div></div>
+      <div class="site-title">League of Legends · 你的专属英雄</div>
+    </div>
+
+    <div class="panel">
+      <div class="result-top">
+        <div class="result-label">你的专属英雄</div>
+        <div class="result-champ-name" id="res-champion">奥恩</div>
+        <div><div class="result-role-tag" id="res-role-badge">上单 · 专属英雄</div></div>
+
+        <!-- 原画框 -->
+        <div class="champ-splash-wrap">
+          <div class="champ-splash-frame">
+            <div class="splash-glow"></div>
+            <span class="corner-tr"></span>
+            <span class="corner-bl"></span>
+            <img id="res-splash" src="" alt="英雄原画">
+            <div class="splash-fade"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-divider"><span class="result-divider-icon">◆</span></div>
+
+      <!-- 台词 -->
+      <div class="quote-wrap">
+        <div class="quote-mark">"</div>
+        <div class="quote-text" id="res-quote"></div>
+        <div class="quote-source" id="res-champ-tag"></div>
+      </div>
+
+      <div class="result-divider"><span class="result-divider-icon">◆</span></div>
+
+      <div class="section-title">英雄解析</div>
+      <div class="result-desc" id="res-desc"></div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-secondary" onclick="restart()">重新测试</button>
+      <button class="btn btn-primary" onclick="changeRole()">换个位置</button>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 题目 =====
+const questions = [
+  {part:"Part 1 · 沟通与社交",text:"你正在打一局排位赛，开局5分钟队伍已经有点劣势，上中两路都在被压。队友开始在聊天框互相抱怨。这时你更可能：",options:["主动在聊天或语音中统一节奏，比如「稳住，等打野6级打龙反一波」","和你认识的队友沟通，让小范围先配合起来","不参与聊天，把注意力全部放在补刀和操作上","观察局势，在关键节点简短说一句「别打」「能守」"]},
+  {part:"Part 1 · 沟通与社交",text:"你和朋友开黑，局势比较焦灼，双方经济差不多。语音里有人在不断讲话。这时你通常会：",options:["加入高频讨论，一边打游戏一边不断交流想法","在关键节点发言，比如提醒技能或资源","大部分时间不说话，只专注打游戏","偶尔回应，但更多是在听"]},
+  {part:"Part 1 · 沟通与社交",text:"一局游戏刚结束，虽然输了，但其实是可以翻的局。结算界面停留的那几秒，你更可能：",options:["主动指出关键失误，甚至带一点情绪输出","和朋友讨论「刚刚那波如果这样打会不会更好」","直接退出界面准备下一把","心里复盘但不说出来"]},
+  {part:"Part 1 · 沟通与社交",text:"中期即将爆发一波关键团战，双方在龙坑附近拉扯。此时你更可能：",options:["主动提醒队友站位、技能CD、开团时机","根据队友的交流做出配合","几乎不说话，只专注操作","等关键瞬间说一句「可以打」"]},
+  {part:"Part 1 · 沟通与社交",text:"你的一次操作失误被队友点出来（比如空大/走位失误），你第一反应是：",options:["直接回应甚至反驳对方","解释一下自己的思路","完全不回应","看对方语气决定是否回复"]},
+  {part:"Part 1 · 沟通与社交",text:"当你打出一波漂亮操作（比如1v2反杀）时，你更倾向：",options:["主动在聊天或语音里表达出来甚至带点炫耀","和队友简单分享一下","不说话继续打","只有别人提起才回应"]},
+  {part:"Part 1 · 沟通与社交",text:"当你在优势局时，队伍有机会一波结束比赛，你更可能：",options:["主动指挥推进路线和节奏","跟着团队一起推进","更倾向自己去单带扩大优势","选择更稳的打法等待机会"]},
+  {part:"Part 1 · 沟通与社交",text:"如果整局游戏都没有人说话，你通常会：",options:["主动开口带动沟通","偶尔发信息","完全不说话","只在关键点说"]},
+  {part:"Part 2 · 信息处理与直觉",text:"在选人阶段，你发现当前版本某个英雄胜率很高，但你不太熟练。此时你更可能：",options:["还是优先选择这个版本强势英雄","结合阵容考虑是否拿","继续用自己熟练英雄","想尝试一些不常见但有潜力的玩法"]},
+  {part:"Part 2 · 信息处理与直觉",text:"你在玩中单，对面突然出现一个非常规出装（比如非主流AP玩法）。你更可能：",options:["先按常规对线思路打，观察数据","稍微调整打法适应","按自己习惯打","立刻思考这个套路背后的逻辑并应对"]},
+  {part:"Part 2 · 信息处理与直觉",text:"当你判断一波团战能不能打时，你更依赖：",options:["双方装备、等级、技能等「硬数据」","团队整体状态","自己手感和经验","对局势的直觉判断"]},
+  {part:"Part 2 · 信息处理与直觉",text:"对于地图资源（龙/先锋/男爵），你通常：",options:["精确记时间并计算收益","大致记住刷新节奏","看情况顺便拿","提前布局未来资源争夺"]},
+  {part:"Part 2 · 信息处理与直觉",text:"你在打野时，对路线的选择更偏向：",options:["按最优刷野路线执行","基本按常规，但适当变化","完全根据当下情况随机应变","预测对方打野位置进行反制"]},
+  {part:"Part 2 · 信息处理与直觉",text:"在一局游戏中，你更容易关注：",options:["当前每一波具体收益（兵线/塔/资源）","团队整体节奏","自己的操作和体验","后期局势走向"]},
+  {part:"Part 2 · 信息处理与直觉",text:"看到一个新套路（比如奇怪分推流）时，你会：",options:["查胜率、数据再决定","观察别人怎么玩","有兴趣就试","主动研究并优化"]},
+  {part:"Part 2 · 信息处理与直觉",text:"当游戏进入中后期复杂局势，你更像：",options:["执行稳定策略的人","调整策略的人","随机应对的人","规划全局的人"]},
+  {part:"Part 3 · 决策与情绪",text:"队友连续两波失误导致节奏崩盘，你更可能：",options:["明确指出问题在哪里","提出改进建议","安慰队友别心态爆","不参与评价"]},
+  {part:"Part 3 · 决策与情绪",text:"一局游戏输了，你第一反应更接近：",options:["分析输在哪","和队友讨论问题","先调整情绪","放松一下不想想"]},
+  {part:"Part 3 · 决策与情绪",text:"当你决定是否参团时，你更看重：",options:["这波打赢的概率和收益","团队整体情况","队友情绪/状态","自己感觉"]},
+  {part:"Part 3 · 决策与情绪",text:"你对队友的期待更像：",options:["每个人都该打好自己的位置","能配合就行","别互喷就好","随缘"]},
+  {part:"Part 3 · 决策与情绪",text:"当打野来帮你但时机一般，你更可能：",options:["判断收益决定是否配合","尽量配合队友","表达感谢","看情况"]},
+  {part:"Part 3 · 决策与情绪",text:"对你来说，这个游戏最重要的是：",options:["赢比赛","团队配合","玩得开心","自我发挥"]},
+  {part:"Part 3 · 决策与情绪",text:"当你需要给队友建议时，你更可能：",options:["直接指出问题","用比较理性的方式说","尽量委婉表达","不太愿意说"]},
+  {part:"Part 3 · 决策与情绪",text:"当队友情绪崩溃（开始摆烂），你更可能：",options:["不太在意继续打","试着拉回节奏","安抚情绪","视情况而定"]},
+  {part:"Part 4 · 节奏与规划",text:"你在开始一局游戏前，通常会：",options:["明确这局打法（稳/进攻/发育）","大致想一下思路","进去再看情况","完全随缘"]},
+  {part:"Part 4 · 节奏与规划",text:"在游戏过程中，你更倾向：",options:["按计划推进节奏","基本按计划但可调整","根据局势随时改变","完全自由发挥"]},
+  {part:"Part 4 · 节奏与规划",text:"你的英雄选择习惯更像：",options:["固定英雄池","常用几个","经常换","随机"]},
+  {part:"Part 4 · 节奏与规划",text:"当局势变化（比如突然劣势）时：",options:["坚持原策略","调整策略","临场应变","随机应对"]},
+  {part:"Part 4 · 节奏与规划",text:"你的游戏时间安排：",options:["有固定计划","大致安排","想玩就玩","完全随缘"]},
+  {part:"Part 4 · 节奏与规划",text:"打排位时你更倾向：",options:["稳定上分策略","看情况","随便打","情绪驱动"]},
+  {part:"Part 4 · 节奏与规划",text:"连续输几局后你会：",options:["停下来复盘","简单总结","继续打","不管"]},
+  {part:"Part 4 · 节奏与规划",text:"如果用一句话形容你的游戏风格：",options:["计划型执行者","稳定型玩家","灵活型玩家","自由型玩家"]}
+];
+
+const scoreMap = [2, 1, -2, -1];
+
+// ===== 英雄数据 =====
+// img: 官方大张原画链接
+// quote: 【你来填】英雄台词
+// desc: 【你来填】英雄解析
+// 原画URL格式: https://ddragon.leagueoflegends.com/cdn/img/champion/splash/英雄英文名_0.jpg
+
+const champions = {
+  INTJ: {
+    Top: {
+      hero:"山隐之焰——奥恩",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ornn_0.jpg",
+      quote:"老熔炉，又燃起火了",
+      desc:"你打上单时更重视整局节奏，而不是一时得失。你擅长稳住对线、控制兵线，并在中后期通过开团和前排价值影响比赛。"
+    },
+    Jungle: {
+      hero:"永猎双子——千珏",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Kindred_0.jpg",
+      quote:"执子之魂，与子共生",
+      desc:"你打野时强在判断而不是冲动。你会提前规划路线、资源和时机，用清晰的思路一步一步把优势滚出来。"
+    },
+    Mid: {
+      hero:"卡牌大师——崔斯特",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/TwistedFate_0.jpg",
+      quote:"顺我者昌，逆我者亡！此乃天意！",
+      desc:"你玩中单时最看重全局影响力。你会主动关注边路、资源和转线机会，用大局观而不是单纯对线来带动比赛。"
+    },
+    ADC: {
+      hero:"残月之肃——厄斐琉斯",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Aphelios_0.jpg",
+      quote:"我将于此指引你，立此为誓",
+      desc:"你打 ADC 时擅长处理复杂局面。你重视武器节奏、站位和输出窗口，能把细节理解转化成团战中的稳定伤害。"
+    },
+    Support: {
+      hero:"时光守护者——基兰",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zilean_0.jpg",
+      quote:"万变不离其宗",
+      desc:"你玩辅助时更像幕后节奏手。你会通过视野、技能交换和关键保人改变战局，让团队在正确时间做正确的事。"
+    }
+  },
+
+  INTP: {
+    Top: {
+      hero:"德玛西亚之翼——奎因",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Quinn_0.jpg",
+      quote:"德玛西亚需要英雄",
+      desc:"你打上单时不喜欢照着常规剧本来。你擅长利用英雄特性、跑线和理解差异去打出让人意外的优势。"
+    },
+    Jungle: {
+      hero:"时间刺客——艾克",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ekko_0.jpg",
+      quote:"我宁愿犯错，也不愿什么都不做",
+      desc:"你打野时像在不断寻找最优解。你喜欢边打边修正路线，用操作和判断去测试哪种节奏最有效。"
+    },
+    Mid: {
+      hero:"虚空之眼——维克兹",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Velkoz_0.jpg",
+      quote:"啊，又一个有价值的实体",
+      desc:"你玩中单时很重视距离、角度和技能逻辑。你擅长站在合理位置，把每一次消耗和爆发都打得有条理。"
+    },
+    ADC: {
+      hero:"深渊巨口——克格莫",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/KogMaw_0.jpg",
+      quote:"请远离我饥饿的范围",
+      desc:"你打 ADC 时很愿意为了极致输出去研究细节。只要环境到位，你就能把持续伤害和后期上限发挥得很可怕。"
+    },
+    Support: {
+      hero:"复仇焰魂——布兰德",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Brand_0.jpg",
+      quote:"这就是那净化世界的烈火",
+      desc:"你玩辅助时不一定走传统保护路线。你更喜欢研究伤害、压制和对线逻辑，用进攻性建立下路优势。"
+    }
+  },
+
+  ENTJ: {
+    Top: {
+      hero:"诺克萨斯之手——德莱厄斯",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Darius_0.jpg",
+      quote:"他们将后悔与我为敌",
+      desc:"你打上单时会自然进入主导位置。你喜欢掌控对线，用强势压制和滚雪球把局面牢牢握在自己手里。"
+    },
+    Jungle: {
+      hero:"德玛西亚皇子——嘉文四世",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/JarvanIV_0.jpg",
+      quote:"战斗之心，至死方休! ",
+      desc:"你打野时像一个节奏发起者。你会主动找机会、决定资源优先级，并用清晰果断的行动带动全队。"
+    },
+    Mid: {
+      hero:"未来守护者——杰斯",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jayce_0.jpg",
+      quote:"我们的未来很光明",
+      desc:"你玩中单时不喜欢等机会，而是习惯自己创造机会。你擅长通过推线、压制和中期主动权把比赛拖进自己的节奏。"
+    },
+    ADC: {
+      hero:"荣耀行刑官——德莱文",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Draven_0.jpg",
+      quote:"听到了吗?丧钟已为你鸣响",
+      desc:"你打 ADC 时存在感很强。你不满足于安稳发育，而是更想在对线和团战中直接接管比赛。"
+    },
+    Support: {
+      hero:"曙光女神——蕾欧娜",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Leona_0.jpg",
+      quote:"冲破他们的防线！",
+      desc:"你玩辅助时不是被动跟随的人。你擅长把模糊局势变成明确行动，用果断开团让队友跟上你的节奏。"
+    }
+  },
+
+  ENTP: {
+    Top: {
+      hero:"迅捷斥候——提莫",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Teemo_0.jpg",
+      quote:"提莫队长正在待命",
+      desc:"你打上单时最大的特点不是稳，而是会想办法让对面难受。你喜欢用非常规方式打乱对手习惯。"
+    },
+    Jungle: {
+      hero:"恶魔小丑——萨科",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Shaco_0.jpg",
+      quote:"恶作剧的对象，是你哟!",
+      desc:"你打野时更喜欢制造局面，而不是照本宣科。你擅长心理战、反常规路线和让对手猜不到下一步。"
+    },
+    Mid: {
+      hero:"暮光星灵——佐伊",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zoe_0.jpg",
+      quote:"再精彩一点，快",
+      desc:"你玩中单时很有灵感，喜欢靠角度、创意和瞬间判断打开局面。你最大的强项往往是意外性。"
+    },
+    ADC: {
+      hero:"爆破鬼才——吉格斯",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ziggs_0.jpg",
+      quote:"快要爆炸喽",
+      desc:"你打 ADC 时不执着传统玩法。你更喜欢远程消耗、拆塔推进和用独特思路建立节奏优势。"
+    },
+    Support: {
+      hero:"血港鬼影——派克",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Pyke_0.jpg",
+      quote:"谋杀列表上的人，今天就是你们的纪念日!",
+      desc:"你玩辅助时不想老老实实站在后面。你更喜欢游走、抓机会、收割和不断制造意外。"
+    }
+  },
+
+  ISTJ: {
+    Top: {
+      hero:"德玛西亚之力——盖伦",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Garen_0.jpg",
+      quote:"为了那些不能作战的人而战",
+      desc:"你打上单时最看重稳定和纪律。你不会轻易冒险，而是通过扎实对线和稳定执行慢慢建立优势。"
+    },
+    Jungle: {
+      hero:"德邦总管——赵信",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/XinZhao_0.jpg",
+      quote:"命运，已做出了它的选择",
+      desc:"你打野时偏向执行型打法，重视清晰路线和可控收益。你不追求花哨，而是一步一步把比赛带向胜利。"
+    },
+    Mid: {
+      hero:"黑暗之女——安妮",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Annie_0.jpg",
+      quote:"不要变成发抖的小喵喵",
+      desc:"你玩中单时讲究稳定性和可控性。你更倾向于简单有效、容错率高的方式去处理对线和团战。"
+    },
+    ADC: {
+      hero:"寒冰射手——艾希",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ashe_0.jpg",
+      quote:"不要错把仁慈当成软弱",
+      desc:"你打 ADC 时更像一个稳定的输出机器。你靠站位、视野和技能命中率持续提供价值。"
+    },
+    Support: {
+      hero:"弗雷尔卓德之心——布隆",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Braum_0.jpg",
+      quote:"站在布隆后面",
+      desc:"你玩辅助时最大的特点就是可靠。你擅长保护、挡技能、站在最需要你的位置。"
+    }
+  },
+
+  ISFJ: {
+    Top: {
+      hero:"暮光之眼——慎",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Shen_0.jpg",
+      quote:"执行均衡之令",
+      desc:"你打上单时不会只盯着自己的线。你更关注团队整体，愿意为了关键支援放下个人得失。"
+    },
+    Jungle: {
+      hero:"生化魔人——扎克",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zac_0.jpg",
+      quote:"我也许会屈服，但我绝对不会折服",
+      desc:"你打野时更关注谁需要帮助，而不是谁能让你看起来最亮眼。你擅长为队友创造更舒服的输出环境。"
+    },
+    Mid: {
+      hero:"正义巨像——加里奥",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Galio_0.jpg",
+      quote:"我们没有必要战斗，但我乐意奉陪!",
+      desc:"你玩中单时像一个支援核心。你会随时关注边路和团战动向，并在关键时刻站出来保护队友。"
+    },
+    ADC: {
+      hero:"涤魂圣枪——赛娜",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Senna_0.jpg",
+      quote:"黑暗归于寂灭，光明终将炽烈",
+      desc:"你打 ADC 时不只在意个人输出，还会关注团队节奏、站位协同和整体推进。"
+    },
+    Support: {
+      hero:"众星之子——索拉卡",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Soraka_0.jpg",
+      quote:"去治愈并保护大家",
+      desc:"你玩辅助时更擅长让别人变强。你会时刻留意队友血量、位置和状态，把保护做到极致。"
+    }
+  },
+
+  ESTJ: {
+    Top: {
+      hero:"腕豪——瑟提",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Sett_0.jpg",
+      quote:"爱你老妈，明天见",
+      desc:"你打上单时喜欢掌控局面，用强势对线和主动压制逼对手进入你的节奏。"
+    },
+    Jungle: {
+      hero:"北地之怒——瑟庄妮",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Sejuani_0.jpg",
+      quote:"向前骑行",
+      desc:"你打野时非常注重团队协同和节奏推进。你会主动发起团战，并把全队行动组织起来。"
+    },
+    Mid: {
+      hero:"符文法师——瑞兹",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ryze_0.jpg",
+      quote:"力量越大，责任越重，这就是符文法师的宿命",
+      desc:"你玩中单时偏向运营型打法。你擅长通过推线、转线和资源控制带动整局节奏。"
+    },
+    ADC: {
+      hero:"圣枪游侠——卢锡安",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Lucian_0.jpg",
+      quote:"人终有一死，而有些人则需要一点小小的帮助",
+      desc:"你打 ADC 时更喜欢主动进攻和压制。你不太愿意等，而是想把主动权牢牢握在自己手里。"
+    },
+    Support: {
+      hero:"深海泰坦——诺提勒斯",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Nautilus_0.jpg",
+      quote:"感受一下怒海澜涛吧",
+      desc:"你玩辅助时会主动发起战斗。你擅长抓住时机果断开团，用明确行动带起整队节奏。"
+    }
+  },
+
+  ESFJ: {
+    Top: {
+      hero:"熔岩巨兽——墨菲特",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Malphite_0.jpg",
+      quote:"我已经是全速前进了",
+      desc:"你打上单时更在意团战价值，而不是单线高光。你愿意把自己变成团队最稳的一块拼图。"
+    },
+    Jungle: {
+      hero:"殇之木乃伊——阿木木",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Amumu_0.jpg",
+      quote:"我们去找点儿朋友吧!",
+      desc:"你打野时更偏向配合型打法。你喜欢通过控制和团战参与，让大家一起把优势打出来。"
+    },
+    Mid: {
+      hero:"天启者——卡尔玛",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Karma_0.jpg",
+      quote:"心灵与思想合为一体",
+      desc:"你玩中单时更像一个功能核心。你会用护盾、加速和推线支援不断帮助团队运转得更顺。"
+    },
+    ADC: {
+      hero:"战争女神——希维尔",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Sivir_0.jpg",
+      quote:"荣誉，是钝剑上的锈迹",
+      desc:"你打 ADC 时更重视整体推进。你擅长清线、转线和配合团队一起把节奏往前推。"
+    },
+    Support: {
+      hero:"唤潮鲛姬——娜美",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Nami_0.jpg",
+      quote:"我会找到我自己的道路",
+      desc:"你玩辅助时非常注重队友体验。你会通过控制、回复和增益让整支队伍打得更舒服。"
+    }
+  },
+
+  ISTP: {
+    Top: {
+      hero:"无双剑姬——菲奥娜",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Fiora_0.jpg",
+      quote:"别人也尝试过，但只有我成功",
+      desc:"你打上单时更像一个纯操作型选手。你不太依赖套路，而是通过细节、走位和换血判断来赢线。"
+    },
+    Jungle: {
+      hero:"盲僧——李青",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/LeeSin_0.jpg",
+      quote:"控制自己，掌控敌人",
+      desc:"你打野时节奏非常灵活，不喜欢被固定路线束缚。你更依赖即时判断和操作，看到机会就会立刻行动。"
+    },
+    Mid: {
+      hero:"疾风剑豪——亚索",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg",
+      quote:"且随疾风前行，身后亦须留心",
+      desc:"你玩中单时更看重操作上限和即时反馈。你喜欢通过走位、连招和反应打出优势。"
+    },
+    ADC: {
+      hero:"暗夜猎手——薇恩",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Vayne_0.jpg",
+      quote:"木已成舟",
+      desc:"你打 ADC 时很擅长在高压环境里找输出位置。你更依赖个人操作和拉扯能力打出后期价值。"
+    },
+    Support: {
+      hero:"魂锁典狱长——锤石",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Thresh_0.jpg",
+      quote:"我们该捕捉谁的灵魂?",
+      desc:"你玩辅助时偏向操作型。你通过技能命中、走位和时机控制来改变整场比赛。"
+    }
+  },
+
+  ISFP: {
+    Top: {
+      hero:"狂暴之心——凯南",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Kennen_0.jpg",
+      quote:"他们的最后时刻要来临了!",
+      desc:"你打上单时更依赖感觉判断节奏。你会根据局势灵活调整打法，而不是死守固定套路。"
+    },
+    Jungle: {
+      hero:"狂野女猎手——奈德丽",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Nidalee_0.jpg",
+      quote:"狂野，将使他们感到畏惧！",
+      desc:"你打野时节奏偏快，也很看手感。你喜欢通过变化路线和细节操作制造局面。"
+    },
+    Mid: {
+      hero:"离群之刺——阿卡丽",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Akali_0.jpg",
+      quote:"唯快不破",
+      desc:"你玩中单时更注重个人表达。你喜欢灵活进出战场，用操作和节奏打出自己的风格。"
+    },
+    ADC: {
+      hero:"沙漠玫瑰——莎弥拉",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Samira_0.jpg",
+      quote:"活要痛快，死要趁早",
+      desc:"你打 ADC 时偏向进攻型玩法。你喜欢在团战中找到节奏，一波打出爆发输出。"
+    },
+    Support: {
+      hero:"幻翎——洛",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Rakan_0.jpg",
+      quote:"世界这么大，我得好好看看",
+      desc:"你玩辅助时非常灵活，擅长通过节奏变化和机动性带动战局。"
+    }
+  },
+
+  ESTP: {
+    Top: {
+      hero:"荒漠屠夫——雷克顿",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Renekton_0.jpg",
+      quote:"谁是砧板上的下一块肉？",
+      desc:"你打上单时非常直接，喜欢通过对拼和压制快速建立优势，不太愿意把比赛拖慢。"
+    },
+    Jungle: {
+      hero:"皮城执法官——蔚",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Vi_0.jpg",
+      quote:"我让双手替我发言",
+      desc:"你打野时行动果断，一旦看到机会就会立刻出手。你更喜欢主动创造局面。"
+    },
+    Mid: {
+      hero:"影流之主——劫",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg",
+      quote:"无形之刃，最为致命",
+      desc:"你玩中单时更偏向进攻型打法。你喜欢通过击杀和压制迅速把优势滚起来。"
+    },
+    ADC: {
+      hero:"复仇之矛——卡莉丝塔",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Kalista_0.jpg",
+      quote:"我的长矛会找到你的",
+      desc:"你打 ADC 时节奏感很强，喜欢持续进攻、主动换血和不断压制对手。"
+    },
+    Support: {
+      hero:"不屈之枪——潘森",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Pantheon_0.jpg",
+      quote:"人若品尝过神的恶毒，就再也说不出甜言蜜语",
+      desc:"你玩辅助时偏向进攻型。你会主动找机会开打，而不是被动等待。"
+    }
+  },
+
+  ESFP: {
+    Top: {
+      hero:"暗裔剑魔——亚托克斯",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Aatrox_0.jpg",
+      quote:"杀戮，是我的手段",
+      desc:"你打上单时更享受战斗本身。你喜欢持续对拼，用正面压力和节奏压制对手。"
+    },
+    Jungle: {
+      hero:"齐天大圣——悟空",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/MonkeyKing_0.jpg",
+      quote:"吃俺老孙一棒！",
+      desc:"你打野时喜欢参与团战和冲突，而不是单纯刷资源。你更享受热闹而直接的节奏。"
+    },
+    Mid: {
+      hero:"万花通灵——妮蔻",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Neeko_0.jpg",
+      quote:"不要只被一具身体束缚，还有那么多种选择！",
+      desc:"你玩中单时风格灵活，喜欢打出变化和意外性，让对手难以预测你的下一步。"
+    },
+    ADC: {
+      hero:"暴走萝莉——金克丝",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg",
+      quote:"我是个疯子，有医生开的证明!",
+      desc:"你打 ADC 时节奏和情绪会越打越高，一旦起势就能一路把压力推到对面脸上。"
+    },
+    Support: {
+      hero:"魔法猫咪——悠米",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_0.jpg",
+      quote:"我们是最好的搭档！",
+      desc:"你玩辅助时更轻松灵活，喜欢跟着队友一起推进节奏，而不是自己扛下全部压力。"
+    }
+  },
+
+  INFJ: {
+    Top: {
+      hero:"狂战士——奥拉夫",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Olaf_0.jpg",
+      quote:"所到之处，寸草不生",
+      desc:"你打上单时更关注整体局势。你会在关键时刻承担压力，帮助团队打开局面。"
+    },
+    Jungle: {
+      hero:"翠神——艾翁",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ivern_0.jpg",
+      quote:"生命，真是一个古怪的奇迹呀",
+      desc:"你打野时更偏向辅助型节奏。你会优先帮助队友，而不是一味追求个人表现。"
+    },
+    Mid: {
+      hero:"冰霜女巫——丽桑卓",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Lissandra_0.jpg",
+      quote:"战争来来去去，而我永恒不灭",
+      desc:"你玩中单时更注重控制和团战价值。你擅长在关键时刻限制对手，帮助团队建立优势。"
+    },
+    ADC: {
+      hero:"戏命师——烬",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jhin_0.jpg",
+      quote:"我于杀戮之中盛放，亦如黎明中的花朵",
+      desc:"你打 ADC 时更讲究节奏和质量。你在意每一次出手的价值，而不是盲目追求输出数量。"
+    },
+    Support: {
+      hero:"星界游神——巴德",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Bard_0.jpg",
+      quote:"’巴松管‘",
+      desc:"你玩辅助时更偏向游走和节奏控制。你会通过地图影响力在很多地方同时创造价值。"
+    }
+  },
+
+  INFP: {
+    Top: {
+      hero:"正义天使——凯尔",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Kayle_0.jpg",
+      quote:"我携来光的怒火",
+      desc:"你打上单时更偏向成长型玩法。你愿意耐心等待时间和装备，让自己慢慢变强。"
+    },
+    Jungle: {
+      hero:"含羞蓓蕾——莉莉娅",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Lillia_0.jpg",
+      quote:"灵魂哀泣时，世界便盛开了；花瓣零落时，梦便开口了",
+      desc:"你打野时更注重节奏和发育。你不会急于求成，而是靠持续跑图和资源积累建立优势。"
+    },
+    Mid: {
+      hero:"发条魔灵——奥莉安娜",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Orianna_0.jpg",
+      quote:"我听到了甜言蜜语",
+      desc:"你玩中单时更偏向稳定和成长，通过位置、节奏和团战配合打出持续价值。"
+    },
+    ADC: {
+      hero:"探险家——伊泽瑞尔",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ezreal_0.jpg",
+      quote:"是时候表演真正的技术了!",
+      desc:"你打 ADC 时更注重安全和持续输出，擅长通过拉扯和消耗慢慢扩大优势。"
+    },
+    Support: {
+      hero:"仙灵女巫——璐璐",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Lulu_0.jpg",
+      quote:"我建议，滑着走!",
+      desc:"你玩辅助时更偏向保护和增益。你会努力让核心队友打得更舒服、更敢操作。"
+    }
+  },
+
+  ENFJ: {
+    Top: {
+      hero:"兽灵行者——乌迪尔",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Udyr_0.jpg",
+      quote:"武器，是为弱者准备的",
+      desc:"你打上单时更偏向团队执行。你会通过稳定发挥和正面压力帮助整体节奏往前推。"
+    },
+    Jungle: {
+      hero:"龙血武姬——希瓦娜",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Shyvana_0.jpg",
+      quote:"仰视我的真身吧!",
+      desc:"你打野时很注重整体推进。你会围绕资源和团战持续带动全队节奏。"
+    },
+    Mid: {
+      hero:"岩雀——塔莉垭",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Taliyah_0.jpg",
+      quote:"命数如织，当为磐石",
+      desc:"你玩中单时很看重地图影响力。你会通过推线、支援和节奏联动不断扩大优势。"
+    },
+    ADC: {
+      hero:"逆羽——霞",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Xayah_0.jpg",
+      quote:"我们是鸟儿，他们只是笼子里的囚徒",
+      desc:"你打 ADC 时既重视输出也重视配合。你擅长在团队节奏里找到安全又高效的输出位置。"
+    },
+    Support: {
+      hero:"牛头酋长——阿利斯塔",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Alistar_0.jpg",
+      quote:"俺知道该怎么做",
+      desc:"你玩辅助时更偏向开团和保护并重。你会通过控制和抗伤把团队节奏带起来。"
+    }
+  },
+
+  ENFP: {
+    Top: {
+      hero:"迷失之牙——纳尔",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Gnar_0.jpg",
+      quote:"Gnar gada!",
+      desc:"你打上单时风格灵活，喜欢变化和节奏。你会根据局势不断调整打法，让对手难以适应。"
+    },
+    Jungle: {
+      hero:"祖安怒兽——沃里克",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Warwick_0.jpg",
+      quote:"你放的血引来了我",
+      desc:"你打野时更偏向机会驱动。你喜欢不断找节奏点，用直觉和行动快速制造局面。"
+    },
+    Mid: {
+      hero:"诡术妖姬——乐芙兰",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Leblanc_0.jpg",
+      quote:"只不过是镜花水月",
+      desc:"你玩中单时喜欢变化、位移和突然发难。你擅长让对手猜不到你的角度和下一步。"
+    },
+    ADC: {
+      hero:"麦林炮手——崔丝塔娜",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Tristana_0.jpg",
+      quote:"一日为班德尔炮手，终身为班德尔炮手",
+      desc:"你打 ADC 时节奏感很强，喜欢不断推进、找机会和把优势迅速扩大。"
+    },
+    Support: {
+      hero:"风暴之怒——迦娜",
+      img:"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Janna_0.jpg",
+      quote:"风暴就要来临了! ",
+      desc:"你玩辅助时更偏向保护和节奏控制。你擅长让团队整体打得更顺、更安全。"
+    }
+  }
+};
+
+// ===== 状态 =====
+let currentQ = 0;
+let answers = new Array(32).fill(null);
+let selectedRole = null;
+
+function selectRole(btn) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedRole = btn.dataset.role;
+  document.getElementById('start-btn').disabled = false;
+}
+
+function startTest() {
+  showPage('page-quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = questions[currentQ];
+  const panel = document.getElementById('question-panel');
+  panel.style.opacity = '0';
+  panel.style.transform = 'translateY(10px)';
+  setTimeout(() => {
+    document.getElementById('part-tag').textContent = q.part;
+    document.getElementById('q-num').textContent = `第 ${currentQ + 1} 题`;
+    document.getElementById('q-text').textContent = q.text;
+    const opts = document.getElementById('q-options');
+    opts.innerHTML = '';
+    ['A','B','C','D'].forEach((lbl, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn' + (answers[currentQ] === i ? ' selected' : '');
+      btn.innerHTML = `<span class="option-label">${lbl}</span><span>${q.options[i]}</span>`;
+      btn.onclick = () => chooseAndNext(i);
+      opts.appendChild(btn);
+    });
+    const pct = ((currentQ + 1) / 32 * 100).toFixed(1);
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-text').textContent = `${currentQ + 1} / 32`;
+    const partNames = ['Part 1 · 沟通与社交','Part 2 · 信息处理','Part 3 · 决策情绪','Part 4 · 节奏规划'];
+    document.getElementById('part-label').textContent = partNames[Math.floor(currentQ / 8)];
+    document.getElementById('btn-prev').disabled = currentQ === 0;
+    panel.style.transition = 'opacity 0.3s, transform 0.3s';
+    panel.style.opacity = '1';
+    panel.style.transform = 'translateY(0)';
+  }, 120);
+}
+
+function chooseAndNext(idx) {
+  answers[currentQ] = idx;
+  document.querySelectorAll('.option-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i === idx);
+    if (i === idx) b.classList.add('flash');
+  });
+  setTimeout(() => {
+    if (currentQ < 31) { currentQ++; renderQuestion(); }
+    else showResult();
+  }, 280);
+}
+
+function prevQ() {
+  if (currentQ > 0) { currentQ--; renderQuestion(); }
+}
+
+function calcMBTI() {
+  let ei=0, sn=0, tf=0, jp=0;
+  for(let i=0;i<8;i++)  ei += answers[i]!==null ? scoreMap[answers[i]] : 0;
+  for(let i=8;i<16;i++) sn += answers[i]!==null ? scoreMap[answers[i]] : 0;
+  for(let i=16;i<24;i++) tf += answers[i]!==null ? scoreMap[answers[i]] : 0;
+  for(let i=24;i<32;i++) jp += answers[i]!==null ? scoreMap[answers[i]] : 0;
+  return (ei>=0?'E':'I') + (sn>=0?'S':'N') + (tf>=0?'T':'F') + (jp>=0?'J':'P');
+}
+
+function showResult() {
+  const type = calcMBTI();
+  const d = champions[type][selectedRole];
+  const roleNames = { Top:'上单', Jungle:'打野', Mid:'中单', ADC:'ADC', Support:'辅助' };
+
+  document.getElementById('res-champion').textContent = d.hero;
+  document.getElementById('res-role-badge').textContent = roleNames[selectedRole] + ' · 专属英雄';
+  document.getElementById('res-splash').src = d.img;
+  document.getElementById('res-splash').alt = d.hero + ' 原画';
+  document.getElementById('res-quote').textContent = d.quote;
+  document.getElementById('res-champ-tag').textContent = '— ' + d.hero;
+  document.getElementById('res-desc').textContent = d.desc;
+
+  showPage('page-result');
+}
+
+function restart() {
+  answers = new Array(32).fill(null);
+  currentQ = 0;
+  selectedRole = null;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('start-btn').disabled = true;
+  showPage('page-intro');
+}
+
+function changeRole() {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('start-btn').disabled = true;
+  showPage('page-intro');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+</script>
+</body>
+</html>
